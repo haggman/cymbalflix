@@ -12,5 +12,5 @@ variable "region" {
 variable "database_name" {
   description = "The name of the Firestore database"
   type        = string
-  default     = "cymbaflix-db"
+  default     = "cymbalflix-db"
 }

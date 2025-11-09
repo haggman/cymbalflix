@@ -21,7 +21,7 @@ resource "google_project_service" "iam" {
 }
 
 # Create Firestore database
-resource "google_firestore_database" "cymbaflix" {
+resource "google_firestore_database" "cymbalflix" {
   project          = var.project_id
   name             = var.database_name
   location_id      = var.region
@@ -34,11 +34,11 @@ resource "google_firestore_database" "cymbaflix" {
 }
 
 # Create custom service account for Cloud Run
-resource "google_service_account" "cymbaflix_run" {
+resource "google_service_account" "cymbalflix_run" {
   project      = var.project_id
-  account_id   = "cymbaflix-run-sa"
-  display_name = "CymbaFlix Cloud Run Service Account"
-  description  = "Service account for CymbaFlix Cloud Run service to access Firestore"
+  account_id   = "cymbalflix-run-sa"
+  display_name = "CymbalFlix Cloud Run Service Account"
+  description  = "Service account for CymbalFlix Cloud Run service to access Firestore"
   
   depends_on = [
     google_project_service.iam
@@ -49,12 +49,12 @@ resource "google_service_account" "cymbaflix_run" {
 resource "google_project_iam_member" "firestore_user" {
   project = var.project_id
   role    = "roles/datastore.user"
-  member  = "serviceAccount:${google_service_account.cymbaflix_run.email}"
+  member  = "serviceAccount:${google_service_account.cymbalflix_run.email}"
 }
 
 # Additional permission for Firestore operations
 resource "google_project_iam_member" "firestore_owner" {
   project = var.project_id
   role    = "roles/datastore.owner"
-  member  = "serviceAccount:${google_service_account.cymbaflix_run.email}"
+  member  = "serviceAccount:${google_service_account.cymbalflix_run.email}"
 }

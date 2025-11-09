@@ -3,6 +3,8 @@ require('dotenv').config();
 
 const fs = require('fs');
 const path = require('path');
+const { parse } = require('csv-parse');
+const cliProgress = require('cli-progress');
 const { connect, close, getDb } = require('./connection');
 
 // Paths to MovieLens data files
@@ -12,59 +14,32 @@ const RATINGS_FILE = path.join(DATA_DIR, 'ratings.csv');
 const TAGS_FILE = path.join(DATA_DIR, 'tags.csv');
 const LINKS_FILE = path.join(DATA_DIR, 'links.csv');
 
+// Configuration
+const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '50000', 10);
+
 /**
- * Parse a CSV file into an array of objects
- * Handles quoted fields that contain commas
+ * Parse CSV file using streaming for better memory efficiency
  */
-function parseCSV(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8');
-  const lines = content.trim().split('\n');
-  
-  // Get headers from first line
-  const headers = lines[0].split(',').map(h => h.trim());
-  
-  // Parse data lines
-  const data = [];
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    const values = [];
-    let current = '';
-    let inQuotes = false;
+function parseCSVStream(filePath) {
+  return new Promise((resolve, reject) => {
+    const results = [];
     
-    // Parse line character by character to handle quoted commas
-    for (let j = 0; j < line.length; j++) {
-      const char = line[j];
-      
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        values.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    values.push(current.trim()); // Push last value
-    
-    // Create object from headers and values
-    const obj = {};
-    headers.forEach((header, index) => {
-      obj[header] = values[index] || '';
-    });
-    data.push(obj);
-  }
-  
-  return data;
+    fs.createReadStream(filePath)
+      .pipe(parse({ columns: true, skip_empty_lines: true }))
+      .on('data', (data) => results.push(data))
+      .on('end', () => resolve(results))
+      .on('error', reject);
+  });
 }
 
 /**
  * Parse movies.csv
  * Format: movieId,title,genres
  */
-function parseMovies() {
+async function parseMovies() {
   console.log('Parsing movies.csv...');
   
-  const data = parseCSV(MOVIES_FILE);
+  const data = await parseCSVStream(MOVIES_FILE);
   
   const movies = data.map(row => {
     // Extract year from title (format: "Movie Title (1995)")
@@ -92,10 +67,10 @@ function parseMovies() {
  * Parse ratings.csv
  * Format: userId,movieId,rating,timestamp
  */
-function parseRatings() {
+async function parseRatings() {
   console.log('Parsing ratings.csv...');
   
-  const data = parseCSV(RATINGS_FILE);
+  const data = await parseCSVStream(RATINGS_FILE);
   
   const ratings = data.map(row => ({
     userId: parseInt(row.userId),
@@ -112,10 +87,10 @@ function parseRatings() {
  * Parse tags.csv
  * Format: userId,movieId,tag,timestamp
  */
-function parseTags() {
+async function parseTags() {
   console.log('Parsing tags.csv...');
   
-  const data = parseCSV(TAGS_FILE);
+  const data = await parseCSVStream(TAGS_FILE);
   
   const tags = data.map(row => ({
     userId: parseInt(row.userId),
@@ -132,10 +107,10 @@ function parseTags() {
  * Parse links.csv
  * Format: movieId,imdbId,tmdbId
  */
-function parseLinks() {
+async function parseLinks() {
   console.log('Parsing links.csv...');
   
-  const data = parseCSV(LINKS_FILE);
+  const data = await parseCSVStream(LINKS_FILE);
   
   const links = data.map(row => ({
     movieId: parseInt(row.movieId),
@@ -149,27 +124,26 @@ function parseLinks() {
 
 /**
  * Calculate average ratings and counts for each movie
+ * Optimized with single-pass reduce
  */
 function calculateMovieStats(movies, ratings) {
   console.log('Calculating movie statistics...');
   
-  // Create a map of movieId -> stats
-  const statsMap = new Map();
-  
-  ratings.forEach(rating => {
-    if (!statsMap.has(rating.movieId)) {
-      statsMap.set(rating.movieId, { sum: 0, count: 0 });
+  // Create stats map using reduce (more efficient than forEach)
+  const statsMap = ratings.reduce((acc, rating) => {
+    if (!acc[rating.movieId]) {
+      acc[rating.movieId] = { sum: 0, count: 0 };
     }
-    const stats = statsMap.get(rating.movieId);
-    stats.sum += rating.rating;
-    stats.count += 1;
-  });
+    acc[rating.movieId].sum += rating.rating;
+    acc[rating.movieId].count += 1;
+    return acc;
+  }, {});
   
   // Update movies with calculated stats
   movies.forEach(movie => {
-    const stats = statsMap.get(movie.movieId);
+    const stats = statsMap[movie.movieId];
     if (stats) {
-      movie.averageRating = Math.round((stats.sum / stats.count) * 100) / 100; // Round to 2 decimals
+      movie.averageRating = Math.round((stats.sum / stats.count) * 100) / 100;
       movie.ratingCount = stats.count;
     }
   });
@@ -177,19 +151,89 @@ function calculateMovieStats(movies, ratings) {
   console.log('Movie statistics calculated');
 }
 
+/**
+ * Import collection in batches with progress bar
+ */
+async function importInBatches(collection, data, collectionName) {
+  const progressBar = new cliProgress.SingleBar({
+    format: `  ${collectionName} |{bar}| {percentage}% | {value}/{total}`
+  }, cliProgress.Presets.shades_classic);
+  
+  progressBar.start(data.length, 0);
+  
+  let totalInserted = 0;
+  
+  for (let i = 0; i < data.length; i += BATCH_SIZE) {
+    const batch = data.slice(i, i + BATCH_SIZE);
+    
+    // Use bulkWrite for better performance
+    const bulkOps = batch.map(doc => ({
+      insertOne: { document: doc }
+    }));
+    
+    const result = await collection.bulkWrite(bulkOps, { ordered: false });
+    totalInserted += result.insertedCount;
+    progressBar.update(totalInserted);
+  }
+  
+  progressBar.stop();
+  return totalInserted;
+}
+
+/**
+ * Create all indexes in parallel
+ */
+async function createIndexes(db) {
+  console.log('\n=== Creating Indexes ===');
+  
+  const moviesCollection = db.collection('movies');
+  const ratingsCollection = db.collection('ratings');
+  const tagsCollection = db.collection('tags');
+  const linksCollection = db.collection('links');
+  
+  await Promise.all([
+    // Movies indexes
+    moviesCollection.createIndex({ movieId: 1 }, { unique: true }),
+    moviesCollection.createIndex({ averageRating: -1 }),
+    moviesCollection.createIndex({ genres: 1 }),
+    moviesCollection.createIndex({ title: 1 }),
+    
+    // Ratings indexes
+    ratingsCollection.createIndex({ movieId: 1 }),
+    ratingsCollection.createIndex({ userId: 1 }),
+    ratingsCollection.createIndex({ rating: -1 }),
+    
+    // Tags indexes
+    tagsCollection.createIndex({ movieId: 1 }),
+    tagsCollection.createIndex({ userId: 1 }),
+    tagsCollection.createIndex({ tag: 1 }),
+    
+    // Links indexes
+    linksCollection.createIndex({ movieId: 1 }, { unique: true }),
+    linksCollection.createIndex({ imdbId: 1 }),
+    linksCollection.createIndex({ tmdbId: 1 })
+  ]);
+  
+  console.log('✓ All indexes created');
+}
 
 /**
  * Import data into Firestore
  */
 async function importData() {
+  const startTime = Date.now();
+  
   try {
     console.log('Starting MovieLens (ml-latest-small) import...\n');
+    console.log('=== Parsing CSV Files ===');
     
-    // Parse all data files
-    const movies = parseMovies();
-    const ratings = parseRatings();
-    const tags = parseTags();
-    const links = parseLinks();
+    // Parse all data files in parallel
+    const [movies, ratings, tags, links] = await Promise.all([
+      parseMovies(),
+      parseRatings(),
+      parseTags(),
+      parseLinks()
+    ]);
     
     // Calculate movie statistics
     calculateMovieStats(movies, ratings);
@@ -198,80 +242,39 @@ async function importData() {
     await connect();
     const db = getDb();
     
-    // Import movies
-    console.log('\n=== Importing Movies ===');
+    // Create indexes first (can be more efficient for bulk inserts)
+    await createIndexes(db);
+    
+    // Import collections in parallel where possible
+    console.log('\n=== Importing Collections ===');
+    
     const moviesCollection = db.collection('movies');
-    console.log('Inserting movies...');
-    const movieResult = await moviesCollection.insertMany(movies);
-    console.log(`✓ Inserted ${movieResult.insertedCount} movies`);
-    
-    // Import ratings (in batches)
-    console.log('\n=== Importing Ratings ===');
     const ratingsCollection = db.collection('ratings');
-    
-    const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '10000', 10);
-
-
-
-    let totalRatings = 0;
-    console.log('Inserting ratings in batches...');
-    for (let i = 0; i < ratings.length; i += BATCH_SIZE) {
-      const batch = ratings.slice(i, i + BATCH_SIZE);
-      const result = await ratingsCollection.insertMany(batch, { ordered: false });
-      totalRatings += result.insertedCount;
-      console.log(`  Progress: ${totalRatings}/${ratings.length} ratings`);
-    }
-    console.log(`✓ Inserted ${totalRatings} ratings`);
-    
-    // Import tags (in batches)
-    console.log('\n=== Importing Tags ===');
     const tagsCollection = db.collection('tags');
-    
-    
-    let totalTags = 0;
-    console.log('Inserting tags in batches...');
-    for (let i = 0; i < tags.length; i += BATCH_SIZE) {
-      const batch = tags.slice(i, i + BATCH_SIZE);
-      const result = await tagsCollection.insertMany(batch, { ordered: false });
-      totalTags += result.insertedCount;
-      console.log(`  Progress: ${totalTags}/${tags.length} tags`);
-    }
-    console.log(`✓ Inserted ${totalTags} tags`);
-    
-    // Import links
-    console.log('\n=== Importing Links ===');
     const linksCollection = db.collection('links');
-    console.log('Inserting links...');
-    const linksResult = await linksCollection.insertMany(links);
-    console.log(`✓ Inserted ${linksResult.insertedCount} links`);
     
-    // Create indexes
-    console.log('\n=== Creating Indexes ===');
+    // Import movies and links in parallel (independent collections)
+    console.log('Importing movies and links...');
+    const [movieCount, linkCount] = await Promise.all([
+      importInBatches(moviesCollection, movies, 'Movies'),
+      importInBatches(linksCollection, links, 'Links')
+    ]);
     
-    // Movies indexes
-    await moviesCollection.createIndex({ movieId: 1 }, { unique: true });
-    await moviesCollection.createIndex({ averageRating: -1 });
-    await moviesCollection.createIndex({ genres: 1 });
-    await moviesCollection.createIndex({ title: 1 });
-    console.log('✓ Movies indexes created');
+    console.log(`✓ Inserted ${movieCount.toLocaleString()} movies`);
+    console.log(`✓ Inserted ${linkCount.toLocaleString()} links`);
     
-    // Ratings indexes
-    await ratingsCollection.createIndex({ movieId: 1 });
-    await ratingsCollection.createIndex({ userId: 1 });
-    await ratingsCollection.createIndex({ rating: -1 });
-    console.log('✓ Ratings indexes created');
+    // Import ratings
+    console.log('\nImporting ratings...');
+    const ratingCount = await importInBatches(ratingsCollection, ratings, 'Ratings');
+    console.log(`✓ Inserted ${ratingCount.toLocaleString()} ratings`);
     
-    // Tags indexes
-    await tagsCollection.createIndex({ movieId: 1 });
-    await tagsCollection.createIndex({ userId: 1 });
-    await tagsCollection.createIndex({ tag: 1 });
-    console.log('✓ Tags indexes created');
+    // Import tags
+    console.log('\nImporting tags...');
+    const tagCount = await importInBatches(tagsCollection, tags, 'Tags');
+    console.log(`✓ Inserted ${tagCount.toLocaleString()} tags`);
     
-    // Links indexes
-    await linksCollection.createIndex({ movieId: 1 }, { unique: true });
-    await linksCollection.createIndex({ imdbId: 1 });
-    await linksCollection.createIndex({ tmdbId: 1 });
-    console.log('✓ Links indexes created');
+    const endTime = Date.now();
+    const duration = ((endTime - startTime) / 1000).toFixed(2);
     
     console.log('\n========================================');
     console.log('🎉 Import completed successfully!');
@@ -280,6 +283,7 @@ async function importData() {
     console.log(`Ratings:  ${ratings.length.toLocaleString()}`);
     console.log(`Tags:     ${tags.length.toLocaleString()}`);
     console.log(`Links:    ${links.length.toLocaleString()}`);
+    console.log(`Duration: ${duration}s`);
     console.log('========================================\n');
     
   } catch (error) {

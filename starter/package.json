@@ -1,5 +1,5 @@
 {
-  "name": "cymbaflix",
+  "name": "cymbalflix",
   "version": "1.0.0",
   "description": "Movie review and rating platform using Firestore with MongoDB compatibility",
   "main": "server/app.js",
@@ -16,6 +16,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "cli-progress": "^3.12.0",
     "cors": "^2.8.5",
     "csv-parse": "^6.1.0",
     "dotenv": "^16.3.1",

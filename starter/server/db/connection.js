@@ -11,7 +11,7 @@ let db = null;
 
 function getUri() {
   const host = process.env.FIRESTORE_HOST;      // e.g. 54a0e60e-...us-east4.firestore.goog
-  const database = process.env.FIRESTORE_DATABASE || 'cymbaflix-db';
+  const database = process.env.FIRESTORE_DATABASE || 'cymbalflix-db';
   if (!host) throw new Error('FIRESTORE_HOST is required (UID.LOCATION.firestore.goog)');
   return (
     `mongodb://${host}:443/${database}` +
@@ -54,7 +54,7 @@ async function connect() {
   if (client && db) return { client, db };
   client = await makeClient();
   await client.connect();
-  db = client.db(process.env.FIRESTORE_DATABASE || 'cymbaflix-db');
+  db = client.db(process.env.FIRESTORE_DATABASE || 'cymbalflix-db');
   return { client, db };
 }
 
