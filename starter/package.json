@@ -5,6 +5,7 @@
   "main": "server/app.js",
   "scripts": {
     "start": "node server/app.js",
+    "dev": "node server/app.js",
     "import": "node server/db/import.js"
   },
   "keywords": [

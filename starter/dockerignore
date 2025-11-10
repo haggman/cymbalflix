@@ -1,0 +1,29 @@
+# Node.js
+node_modules
+npm-debug.log*
+
+# Environment files
+.env
+.env.*
+
+# Git
+.git
+.gitignore
+
+# Data files (don't need in container)
+data
+
+# Documentation
+README.md
+*.md
+
+# IDE
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Terraform
+terraform

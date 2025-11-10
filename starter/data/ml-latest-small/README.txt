@@ -43,7 +43,7 @@ GroupLens is a research group in the Department of Computer Science and Engineer
 
 * recommender systems
 * online communities
-* mobile and ubiquitious technologies
+* mobile and ubiquitous technologies
 * digital libraries
 * local geographic information systems
 

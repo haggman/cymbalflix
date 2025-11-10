@@ -27,25 +27,30 @@ output "connection_instructions" {
   description = "Instructions for connecting to the database"
   value       = <<-EOT
     
+    ========================================
     Firestore Database Created Successfully!
+    ========================================
     
     Database Name: ${google_firestore_database.cymbalflix.name}
-    
-    Location: ${var.region}
+    Database UID:  ${google_firestore_database.cymbalflix.uid}
+    Location:      ${var.region}
     
     Service Account: ${google_service_account.cymbalflix_run.email}
     
-    To connect from your application, use the MongoDB connection string format:
-    mongodb://[username]:[password]@${var.region}.firestore.googleapis.com:27017/${var.database_name}?retryWrites=false&authSource=admin
+    ========================================
+    MongoDB Connection Details
+    ========================================
     
-    Note: When running on Cloud Run, authentication will be handled automatically via the service account.
+    Firestore Host (for .env file):
+    ${google_firestore_database.cymbalflix.uid}.${var.region}.firestore.goog
     
-    Next steps:
-    1. Navigate to the starter/ directory
-    2. Run npm install
-    3. Import the MovieLens data: node server/db/import.js
-    4. Deploy to Cloud Run with the custom service account:
-       gcloud run deploy cymbalflix --source . --service-account=${google_service_account.cymbalflix_run.email}
+    Full MongoDB Connection String Format:
+    mongodb://<username>:<password>@${google_firestore_database.cymbalflix.uid}.${var.region}.firestore.goog:443/${var.database_name}?loadBalanced=true&tls=true&authMechanism=SCRAM-SHA-256&retryWrites=false
+    or, if you are using more integrated IAM authentication:
+    mongodb://${google_firestore_database.cymbalflix.uid}.${var.region}.firestore.goog:443/${var.database_name}?loadBalanced=true&tls=true&retryWrites=false&authMechanism=MONGODB-OIDC&authMechanismProperties=TOKEN_RESOURCE:FIRESTORE
+
+    
+    ========================================
     
   EOT
 }

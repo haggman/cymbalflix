@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Details - CymbalFlix</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="/">
+        <i class="bi bi-film"></i> CymbalFlix
+      </a>
+      <a href="/" class="btn btn-outline-light btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Movies
+      </a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container my-4">
+    <!-- Loading Spinner -->
+    <div id="loading" class="text-center my-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2">Loading movie details...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div id="errorMessage" class="alert alert-danger" role="alert" style="display: none;">
+      <i class="bi bi-exclamation-triangle"></i>
+      <span id="errorText"></span>
+    </div>
+
+    <!-- Movie Details -->
+    <div id="movieDetails" style="display: none;">
+      <!-- Movie Header -->
+      <div class="row mb-4">
+        <div class="col-md-12">
+          <h1 id="movieTitle"></h1>
+          <p class="text-muted" id="movieYear"></p>
+          
+          <div class="d-flex align-items-center mb-3">
+            <div class="me-4">
+              <h3 class="mb-0">
+                <i class="bi bi-star-fill text-warning"></i>
+                <span id="movieRating">-</span>
+              </h3>
+              <small class="text-muted" id="ratingCount">0 ratings</small>
+            </div>
+          </div>
+          
+          <div id="movieGenres" class="mb-3">
+            <!-- Genre badges will be inserted here -->
+          </div>
+          
+          <!-- External Links -->
+          <div id="externalLinks" class="mb-3">
+            <!-- Links will be inserted here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Tags -->
+      <div class="row mb-4" id="tagsSection" style="display: none;">
+        <div class="col-md-12">
+          <h4>Popular Tags</h4>
+          <div id="movieTags">
+            <!-- Tags will be inserted here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Rating Form -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title">Rate this Movie</h4>
+              <form id="ratingForm">
+                <div class="mb-3">
+                  <label for="userId" class="form-label">User ID</label>
+                  <input type="number" class="form-control" id="userId" required min="1" 
+                         placeholder="Enter your user ID (1-610)">
+                  <div class="form-text">For demo purposes, use any user ID between 1 and 610</div>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="rating" class="form-label">Rating</label>
+                  <select class="form-select" id="rating" required>
+                    <option value="">Select a rating...</option>
+                    <option value="0.5">0.5 - Terrible</option>
+                    <option value="1.0">1.0 - Very Bad</option>
+                    <option value="1.5">1.5 - Bad</option>
+                    <option value="2.0">2.0 - Poor</option>
+                    <option value="2.5">2.5 - Below Average</option>
+                    <option value="3.0">3.0 - Average</option>
+                    <option value="3.5">3.5 - Above Average</option>
+                    <option value="4.0">4.0 - Good</option>
+                    <option value="4.5">4.5 - Very Good</option>
+                    <option value="5.0">5.0 - Excellent</option>
+                  </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-star"></i> Submit Rating
+                </button>
+              </form>
+              
+              <!-- Success Message -->
+              <div id="ratingSuccess" class="alert alert-success mt-3" style="display: none;">
+                <i class="bi bi-check-circle"></i> Rating submitted successfully!
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Ratings -->
+      <div class="row">
+        <div class="col-md-12">
+          <h4>Recent Ratings</h4>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Rating</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="recentRatings">
+                <!-- Ratings will be inserted here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-dark text-white text-center py-3 mt-5">
+    <div class="container">
+      <p class="mb-0">CymbalFlix - Powered by Google Cloud Firestore with MongoDB Compatibility</p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Custom JavaScript -->
+  <script src="/js/movie.js"></script>
+</body>
+</html>
