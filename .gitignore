@@ -11,19 +11,20 @@ package-lock.json
 .env.*.local
 
 # Terraform
-terraform/.terraform/
-terraform/*.tfstate
-terraform/*.tfstate.*
-terraform/*.tfvars
-terraform/.terraform.lock.hcl
-terraform/crash.log
-terraform/crash.*.log
-terraform/override.tf
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl
+crash.log
+crash.*.log
+override.tf
 terraform/override.tf.json
-terraform/*_override.tf
-terraform/*_override.tf.json
-terraform/.terraformrc
-terraform/terraform.rc
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+*.tfplan
 
 # IDEs and editors
 .vscode/
