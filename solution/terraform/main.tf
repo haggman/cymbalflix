@@ -58,3 +58,21 @@ resource "google_project_iam_member" "firestore_owner" {
   role    = "roles/datastore.owner"
   member  = "serviceAccount:${google_service_account.cymbalflix_run.email}"
 }
+
+# Enable audit logging for Firestore
+resource "google_project_iam_audit_config" "firestore_audit" {
+  project = var.project_id
+  service = "datastore.googleapis.com" 
+  
+  audit_log_config {
+    log_type = "DATA_READ"
+  }
+  
+  audit_log_config {
+    log_type = "DATA_WRITE"
+  }
+  
+  depends_on = [
+    google_project_service.firestore
+  ]
+}
