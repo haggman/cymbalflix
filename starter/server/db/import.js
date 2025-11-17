@@ -181,6 +181,33 @@ async function importInBatches(collection, data, collectionName) {
 }
 
 /**
+ * Add a little retry support for index creations that conflict
+ */
+async function withRetry(fn, { retries = 5, baseDelayMs = 200 } = {}) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const code = err.code ?? err.errorResponse?.code;
+      const codeName = err.codeName ?? err.errorResponse?.codeName;
+
+      const isAborted =
+        code === 112 ||
+        codeName === 'Aborted' ||
+        String(err.message || '').includes('cross-transaction contention');
+
+      if (!isAborted || attempt === retries - 1) {
+        throw err; // non-retryable or out of retries
+      }
+
+      const delay = baseDelayMs * Math.pow(2, attempt); // exponential backoff
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
+
+/**
  * Create all indexes in parallel
  */
 async function createIndexes(db) {
@@ -193,25 +220,25 @@ async function createIndexes(db) {
   
   await Promise.all([
     // Movies indexes
-    moviesCollection.createIndex({ movieId: 1 }, { unique: true }),
-    moviesCollection.createIndex({ averageRating: -1 }),
-    moviesCollection.createIndex({ genres: 1 }),
-    moviesCollection.createIndex({ title: 1 }),
+    withRetry(() => moviesCollection.createIndex({ movieId: 1 }, { unique: true })),
+    withRetry(() => moviesCollection.createIndex({ averageRating: -1 })),
+    withRetry(() => moviesCollection.createIndex({ genres: 1 })),
+    withRetry(() => moviesCollection.createIndex({ title: 1 })),
     
     // Ratings indexes
-    ratingsCollection.createIndex({ movieId: 1 }),
-    ratingsCollection.createIndex({ userId: 1 }),
-    ratingsCollection.createIndex({ rating: -1 }),
+    withRetry(() => ratingsCollection.createIndex({ movieId: 1 })),
+    withRetry(() => ratingsCollection.createIndex({ userId: 1 })),
+    withRetry(() => ratingsCollection.createIndex({ rating: -1 })),
     
     // Tags indexes
-    tagsCollection.createIndex({ movieId: 1 }),
-    tagsCollection.createIndex({ userId: 1 }),
-    tagsCollection.createIndex({ tag: 1 }),
+    withRetry(() => tagsCollection.createIndex({ movieId: 1 })),
+    withRetry(() => tagsCollection.createIndex({ userId: 1 })),
+    withRetry(() => tagsCollection.createIndex({ tag: 1 })),
     
     // Links indexes
-    linksCollection.createIndex({ movieId: 1 }, { unique: true }),
-    linksCollection.createIndex({ imdbId: 1 }),
-    linksCollection.createIndex({ tmdbId: 1 })
+    withRetry(() => linksCollection.createIndex({ movieId: 1 }, { unique: true })),
+    withRetry(() => linksCollection.createIndex({ imdbId: 1 })),
+    withRetry(() => linksCollection.createIndex({ tmdbId: 1 }))
   ]);
   
   console.log('✓ All indexes created');
