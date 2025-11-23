@@ -8,7 +8,7 @@ const cliProgress = require('cli-progress');
 const { connect, close, getDb } = require('./connection');
 
 // Paths to MovieLens data files
-const DATA_DIR = path.join(__dirname, '../../data/ml-latest-small');
+const DATA_DIR = path.join(__dirname, '/../../../../starter/data/ml-latest-small');
 const MOVIES_FILE = path.join(DATA_DIR, 'movies.csv');
 const RATINGS_FILE = path.join(DATA_DIR, 'ratings.csv');
 const TAGS_FILE = path.join(DATA_DIR, 'tags.csv');
