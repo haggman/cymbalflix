@@ -1,40 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Real-time Demo - CymbalFlix</title>
-  
+
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  
+
   <style>
     .stat-card {
       transition: all 0.3s ease;
     }
+
     .stat-card.updated {
       background-color: #d4edda !important;
       transform: scale(1.02);
     }
-    .connection-online { color: #28a745; }
-    .connection-offline { color: #ffc107; }
+
+    .connection-online {
+      color: #28a745;
+    }
+
+    .connection-offline {
+      color: #ffc107;
+    }
+
     .log-entry {
       font-family: monospace;
       font-size: 0.85rem;
       padding: 4px 8px;
       border-bottom: 1px solid #eee;
     }
-    .log-entry.info { background-color: #e7f3ff; }
-    .log-entry.success { background-color: #d4edda; }
-    .log-entry.warning { background-color: #fff3cd; }
-    .log-entry.error { background-color: #f8d7da; }
+
+    .log-entry.info {
+      background-color: #e7f3ff;
+    }
+
+    .log-entry.success {
+      background-color: #d4edda;
+    }
+
+    .log-entry.warning {
+      background-color: #fff3cd;
+    }
+
+    .log-entry.error {
+      background-color: #f8d7da;
+    }
+
     #activityLog {
       max-height: 300px;
       overflow-y: auto;
     }
   </style>
 </head>
+
 <body class="bg-light">
   <!-- Navigation -->
   <nav class="navbar navbar-dark bg-dark">
@@ -56,7 +79,7 @@
           <div class="card-body">
             <h2><i class="bi bi-lightning-charge"></i> Firestore Native API Demo</h2>
             <p class="text-muted mb-0">
-              This page demonstrates <strong>real-time updates</strong> and <strong>offline support</strong> 
+              This page demonstrates <strong>real-time updates</strong> and <strong>offline support</strong>
               using the Firestore Native API alongside MongoDB compatibility.
             </p>
           </div>
@@ -86,7 +109,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="col-md-6">
         <div class="card">
           <div class="card-header">
@@ -99,6 +122,64 @@
             <p class="mb-0">
               <strong>Offline:</strong> Click "Go Offline" to disconnect. Data stays available from cache.
             </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Offline Writes -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <i class="bi bi-pencil-square"></i> Test Offline Writes
+          </div>
+          <div class="card-body">
+            <p class="mb-3">
+              <strong>Try it:</strong> Submit a rating while offline to see it queue locally,
+              then watch it sync automatically when you go back online!
+            </p>
+
+            <form id="testRatingForm" class="row g-3">
+              <div class="col-md-12">
+                <label class="form-label"><strong>Movie:</strong> Aliens (1986) - MovieID: 260</label>
+              </div>
+
+              <div class="col-md-4">
+                <label for="testUserId" class="form-label">Your User ID</label>
+                <input type="number" class="form-control" id="testUserId" placeholder="Enter 1-610" min="1" max="610"
+                  required>
+              </div>
+
+              <div class="col-md-4">
+                <label for="testRating" class="form-label">Rating</label>
+                <select class="form-select" id="testRating" required>
+                  <option value="5.0">⭐⭐⭐⭐⭐ 5.0 - Excellent</option>
+                  <option value="4.5">⭐⭐⭐⭐✨ 4.5 - Very Good</option>
+                  <option value="4.0">⭐⭐⭐⭐ 4.0 - Good</option>
+                  <option value="3.5">⭐⭐⭐✨ 3.5 - Above Average</option>
+                  <option value="3.0">⭐⭐⭐ 3.0 - Average</option>
+                  <option value="2.5">⭐⭐✨ 2.5 - Below Average</option>
+                  <option value="2.0">⭐⭐ 2.0 - Poor</option>
+                  <option value="1.5">⭐✨ 1.5 - Bad</option>
+                  <option value="1.0">⭐ 1.0 - Terrible</option>
+                </select>
+              </div>
+
+              <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100" id="submitRatingBtn">
+                  <i class="bi bi-star-fill"></i> Submit Rating
+                </button>
+              </div>
+            </form>
+
+            <div id="ratingSuccess" class="alert alert-success mt-3" style="display: none;">
+              <i class="bi bi-check-circle"></i> <span id="successMessage"></span>
+            </div>
+
+            <div id="ratingError" class="alert alert-danger mt-3" style="display: none;">
+              <i class="bi bi-exclamation-triangle"></i> <span id="errorMessage"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -149,11 +230,10 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="alert alert-info mt-3 mb-0" id="demoTip">
               <i class="bi bi-lightbulb"></i>
-              <strong>Try it:</strong> Open CymbalFlix in another tab, rate a movie, 
-              and watch the Ratings count update here instantly!
+              <strong>Try it:</strong> Rate a movie, and watch the Ratings count update here instantly!
             </div>
           </div>
         </div>
@@ -198,10 +278,10 @@
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  
+
   <!-- Firebase SDK - Bundled version -->
   <script src="/js/realtime-bundle.js"></script>
-  
+
   <script>
     // Activity log helper
     function log(message, type = 'info') {
@@ -212,11 +292,11 @@
       entry.innerHTML = `<span class="text-muted">[${time}]</span> ${message}`;
       logDiv.insertBefore(entry, logDiv.firstChild);
     }
-    
+
     function clearLog() {
       document.getElementById('activityLog').innerHTML = '';
     }
-    
+
     // Flash effect for stat updates
     function flashCard(cardId) {
       const card = document.getElementById(cardId);
@@ -225,14 +305,14 @@
         setTimeout(() => card.classList.remove('updated'), 500);
       }
     }
-    
+
     // Update connection status display
     function updateConnectionUI(online) {
       const status = document.getElementById('connectionStatus');
       const detail = document.getElementById('connectionDetail');
       const toggle = document.getElementById('offlineToggle');
       const badge = document.getElementById('realtimeBadge');
-      
+
       if (online) {
         status.innerHTML = '<i class="bi bi-wifi connection-online"></i> Online';
         detail.textContent = 'Connected to Firestore - receiving real-time updates';
@@ -253,14 +333,14 @@
         badge.classList.add('bg-warning');
       }
     }
-    
+
     // Update stats display
     function updateStats(stats, changedCollection) {
       document.getElementById('totalMovies').textContent = stats.movies.toLocaleString();
       document.getElementById('totalRatings').textContent = stats.ratings.toLocaleString();
       document.getElementById('totalTags').textContent = stats.tags.toLocaleString();
       document.getElementById('totalUsers').textContent = stats.users.toLocaleString();
-      
+
       // Flash the changed stat
       if (changedCollection === 'movies') flashCard('moviesCard');
       if (changedCollection === 'ratings') {
@@ -269,60 +349,128 @@
       }
       if (changedCollection === 'tags') flashCard('tagsCard');
     }
-    
+
     // Initialize
-async function init() {
-  log('🚀 Starting real-time demo...', 'info');
-  
-  try {
-    // Get Firebase config from server
-    log('📡 Fetching Firebase configuration...', 'info');
-    const configResponse = await fetch('/api/firebase-config');
-    const config = await configResponse.json();
-    
-    log(`✓ Project: ${config.projectId}, Database: ${config.databaseId}`, 'success');
-    
-    // Initialize Firebase (offline persistence enabled automatically)
-    log('🔥 Initializing Firebase SDK...', 'info');
-    await CymbalFlixRealtime.initializeFirebase(config.projectId, config.databaseId);
-    log('✓ Firebase connected!', 'success');
-    log('✓ Offline persistence enabled automatically', 'success');
-    
-    // Subscribe to real-time stats
-    log('📊 Starting real-time listeners...', 'info');
-    CymbalFlixRealtime.subscribeToStats((stats, changed) => {
-      updateStats(stats, changed);
-      log(`📈 Stats updated (${changed}): Movies=${stats.movies}, Ratings=${stats.ratings}`, 'info');
-    });
-    log('✓ Real-time stats active!', 'success');
-    
-    // Update UI
-    updateConnectionUI(true);
-    document.getElementById('offlineToggle').disabled = false;
-    
-    // Setup offline toggle
-    document.getElementById('offlineToggle').addEventListener('click', async () => {
-      const isNowOffline = await CymbalFlixRealtime.toggleOffline();
-      updateConnectionUI(!isNowOffline);
-      log(isNowOffline ? '✈️ Switched to offline mode' : '🌐 Back online - syncing...', 
-          isNowOffline ? 'warning' : 'success');
-    });
-    
-    log('🎬 Demo ready! Try rating a movie in another tab.', 'success');
-    
-  } catch (error) {
-    log(`❌ Error: ${error.message}`, 'error');
-    console.error('Initialization error:', error);
-    
-    document.getElementById('connectionStatus').innerHTML = 
-      '<i class="bi bi-exclamation-triangle text-danger"></i> Error';
-    document.getElementById('connectionDetail').textContent = error.message;
-  }
-}
-    
+    async function init() {
+      log('🚀 Starting real-time demo...', 'info');
+
+      try {
+        // Get Firebase config from server
+        log('📡 Fetching Firebase configuration...', 'info');
+        const configResponse = await fetch('/api/firebase-config');
+        const config = await configResponse.json();
+
+        log(`✓ Project: ${config.projectId}, Database: ${config.databaseId}`, 'success');
+
+        // Initialize Firebase (offline persistence enabled automatically)
+        log('🔥 Initializing Firebase SDK...', 'info');
+        await CymbalFlixRealtime.initializeFirebase(config.projectId, config.databaseId);
+        log('✓ Firebase connected!', 'success');
+        log('✓ Offline persistence enabled automatically', 'success');
+
+        // Subscribe to real-time stats
+        log('📊 Starting real-time listeners...', 'info');
+        CymbalFlixRealtime.subscribeToStats((stats, changed) => {
+          updateStats(stats, changed);
+          log(`📈 Stats updated (${changed}): Movies=${stats.movies}, Ratings=${stats.ratings}`, 'info');
+        });
+        log('✓ Real-time stats active!', 'success');
+
+        // Update UI
+        updateConnectionUI(true);
+        document.getElementById('offlineToggle').disabled = false;
+
+        // Setup offline toggle
+        document.getElementById('offlineToggle').addEventListener('click', async () => {
+          const isNowOffline = await CymbalFlixRealtime.toggleOffline();
+          updateConnectionUI(!isNowOffline);
+          log(isNowOffline ? '✈️ Switched to offline mode' : '🌐 Back online - syncing...',
+            isNowOffline ? 'warning' : 'success');
+        });
+
+        log('🎬 Demo ready! Try rating a movie in another tab.', 'success');
+
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+        console.error('Initialization error:', error);
+
+        document.getElementById('connectionStatus').innerHTML =
+          '<i class="bi bi-exclamation-triangle text-danger"></i> Error';
+        document.getElementById('connectionDetail').textContent = error.message;
+      }
+    }
+
     // Start when page loads
     document.addEventListener('DOMContentLoaded', init);
-    
+
+    // Setup test rating form
+    document.getElementById('testRatingForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const userId = parseInt(document.getElementById('testUserId').value);
+      const rating = parseFloat(document.getElementById('testRating').value);
+      const movieId = 260; // Aliens (1986)
+
+      const submitBtn = document.getElementById('submitRatingBtn');
+      const successDiv = document.getElementById('ratingSuccess');
+      const errorDiv = document.getElementById('ratingError');
+      const successMsg = document.getElementById('successMessage');
+      const errorMsg = document.getElementById('errorMessage');
+
+      // Hide previous messages
+      successDiv.style.display = 'none';
+      errorDiv.style.display = 'none';
+
+      // Disable button during submission
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
+
+      // Check if we're offline BEFORE attempting submission
+      const isOffline = CymbalFlixRealtime.isOffline();
+
+      try {
+        // Add a timeout wrapper for offline writes
+        const submitPromise = CymbalFlixRealtime.submitRating(movieId, userId, rating);
+
+        if (isOffline) {
+          // When offline, give it 2 seconds max then assume it's queued
+          await Promise.race([
+            submitPromise,
+            new Promise(resolve => setTimeout(resolve, 2000))
+          ]);
+
+          successMsg.textContent = 'Rating queued locally! It will sync when you go back online.';
+          log(`📝 Rating queued (offline): User ${userId} → ${rating} stars`, 'warning');
+        } else {
+          // When online, wait for full completion
+          await submitPromise;
+          successMsg.textContent = 'Rating submitted successfully! Watch the stats update.';
+          log(`✅ Rating synced: User ${userId} → ${rating} stars`, 'success');
+        }
+
+        successDiv.style.display = 'block';
+
+        // Reset form
+        document.getElementById('testRatingForm').reset();
+
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          successDiv.style.display = 'none';
+        }, 5000);
+
+      } catch (error) {
+        errorMsg.textContent = `Failed to submit rating: ${error.message}`;
+        errorDiv.style.display = 'block';
+        log(`❌ Rating failed: ${error.message}`, 'error');
+      } finally {
+        // Re-enable button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-star-fill"></i> Submit Rating';
+      }
+    });
+
+    log('🎬 Demo ready! Try rating a movie in another tab.', 'success');
+
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
       if (window.CymbalFlixRealtime) {
@@ -331,4 +479,5 @@ async function init() {
     });
   </script>
 </body>
+
 </html>

@@ -71,7 +71,7 @@ gcloud run deploy cymbalflix \
   --source . \
   --region "$REGION" \
   --service-account="$SERVICE_ACCOUNT" \
-  --set-env-vars="FIRESTORE_HOST=$FIRESTORE_HOST,FIRESTORE_DATABASE=$FIRESTORE_DATABASE" \
+  --set-env-vars="FIRESTORE_HOST=$FIRESTORE_HOST,FIRESTORE_DATABASE=$FIRESTORE_DATABASE,PROJECT_ID=$PROJECT_ID" \
   --allow-unauthenticated \
   --platform managed \
   --max-instances 10

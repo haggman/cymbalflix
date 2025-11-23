@@ -10,7 +10,8 @@ import {
   onSnapshot,
   persistentLocalCache,
   disableNetwork,
-  enableNetwork
+  enableNetwork, 
+  addDoc
 } from 'firebase/firestore';
 
 let db = null;
@@ -37,9 +38,8 @@ export async function initializeFirebase(projectId, databaseId) {
 
 
 /**
- * Subscribe to real-time stats updates
- * Note: Users count is fetched once from API since calculating unique users
- * from 100k+ ratings in real-time is impractical
+ * CymbalFlix Real-time Features
+ * Uses Firestore Native API for real-time sync and offline support
  */
 export function subscribeToStats(onStatsUpdate) {
   if (!db) throw new Error('Firebase not initialized');
@@ -86,6 +86,25 @@ export function subscribeToStats(onStatsUpdate) {
   console.log('📊 Real-time stats active');
   
   return () => unsubscribeFunctions.forEach(fn => fn());
+}
+
+/**
+ * Submit a rating using Firestore Native API
+ * This write will be queued when offline and synced when back online
+ */
+export async function submitRating(movieId, userId, rating) {
+  if (!db) throw new Error('Firebase not initialized');
+  
+  const ratingsCollection = collection(db, 'ratings');
+  
+  await addDoc(ratingsCollection, {
+    movieId: parseInt(movieId),
+    userId: parseInt(userId),
+    rating: parseFloat(rating),
+    timestamp: Math.floor(Date.now() / 1000)
+  });
+  
+  console.log(`✅ Rating submitted: User ${userId} rated movie ${movieId} with ${rating} stars`);
 }
 
 /**
