@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server/app.js",
     "dev": "node server/app.js",
-    "import": "node server/db/import.js"
+    "import": "node server/db/import.js",
+    "build:realtime": "npx esbuild public/js/realtime-src.js --bundle --outfile=public/js/realtime-bundle.js --format=iife --global-name=CymbalFlixRealtime"
   },
   "keywords": [
     "firestore",
@@ -29,5 +30,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0"
   }
 }

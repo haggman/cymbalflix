@@ -280,4 +280,28 @@ router.get('/stats', async (req, res, next) => {
   }
 });
 
+// New code to support Firebase features
+
+/**
+ * GET /api/firebase-config
+ * Provides Firebase configuration for client-side SDK
+ */
+router.get('/firebase-config', async (req, res, next) => {
+  try {
+    const projectId = process.env.PROJECT_ID || 
+                      process.env.GOOGLE_CLOUD_PROJECT;
+    const databaseId = process.env.FIRESTORE_DATABASE || 'cymbalflix-db';
+    
+    if (!projectId) {
+      return res.status(500).json({ 
+        error: 'PROJECT_ID not configured' 
+      });
+    }
+    
+    res.json({ projectId, databaseId });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
