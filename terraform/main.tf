@@ -20,14 +20,19 @@ resource "google_project_service" "iam" {
   disable_on_destroy = false
 }
 
-# Create Firestore database
+# Create Firestore database (Enterprise, MongoDB compatibility)
 resource "google_firestore_database" "cymbalflix" {
   project          = var.project_id
   name             = var.database_name
   location_id      = var.region
   type             = "FIRESTORE_NATIVE"
   database_edition = "ENTERPRISE"
-  
+
+  # A database can use MongoDB-compatible OR Firestore Native data access,
+  # not both. Enable MongoDB access for the lab's MongoDB API.
+  firestore_data_access_mode          = "DATA_ACCESS_MODE_DISABLED"
+  mongodb_compatible_data_access_mode = "DATA_ACCESS_MODE_ENABLED"
+
   depends_on = [
     google_project_service.firestore
   ]
