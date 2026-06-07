@@ -13,7 +13,6 @@ async function findDuplicates(title, year) {
     console.log(`Searching for duplicates of "${searchTitle}"...`);
 
     const movies = await moviesCollection.find({ title: searchTitle, year: parseInt(year) }).toArray();
-    const movies = await moviesCollection.find({ title: searchTitle }).toArray();
 
     if (movies.length === 0) {
         console.log('No movies found with that title and year.');
