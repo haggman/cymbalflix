@@ -20,14 +20,21 @@ resource "google_project_service" "iam" {
   disable_on_destroy = false
 }
 
-# Create Firestore database
+# Create Firestore database (Enterprise, dual API access)
 resource "google_firestore_database" "cymbalflix" {
   project          = var.project_id
   name             = var.database_name
   location_id      = var.region
   type             = "FIRESTORE_NATIVE"
   database_edition = "ENTERPRISE"
-  
+
+  # Firestore Enterprise can serve this database through both front doors at
+  # once, over the same underlying data: the MongoDB-compatible API and the
+  # Firestore Native API. CymbalFlix uses MongoDB for the application's core
+  # CRUD work, and Native for real-time sync, offline support, and vector search.
+  firestore_data_access_mode          = "DATA_ACCESS_MODE_ENABLED"
+  mongodb_compatible_data_access_mode = "DATA_ACCESS_MODE_ENABLED"
+
   depends_on = [
     google_project_service.firestore
   ]
