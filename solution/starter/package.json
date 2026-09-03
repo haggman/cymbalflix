@@ -25,6 +25,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "firebase": "^12.6.0",
+    "firebase-admin": "^13.0.0",
     "google-auth-library": "^10.5.0",
     "googleapis": "^166.0.0",
     "mongodb": "^6.20.0"
