@@ -20,6 +20,15 @@ resource "google_project_service" "iam" {
   disable_on_destroy = false
 }
 
+# Agent Platform (Vertex AI) API: the Antigravity CLI used in Task 3 bills its
+# model usage through Agent Platform, so a fresh lab project needs this on.
+resource "google_project_service" "aiplatform" {
+  project = var.project_id
+  service = "aiplatform.googleapis.com"
+
+  disable_on_destroy = false
+}
+
 # Create Firestore database (Enterprise, dual API access)
 resource "google_firestore_database" "cymbalflix" {
   project          = var.project_id
