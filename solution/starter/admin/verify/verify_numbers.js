@@ -24,7 +24,9 @@ const MARKER = 999997;
 
     const nativeQuery = async (label, value) => {
       const snap = await fs.getDocs(fs.query(fs.collection(fdb, 'ratings'), fs.where('movieId', '==', value)));
-      const ids = snap.docs.map(d => d.data().userId).sort();
+      snap.docs.forEach(d => info(`   raw doc via Native: ${JSON.stringify(d.data())}`));
+      const norm = (v) => (v && typeof v === 'object' && '__int32__' in v) ? v.__int32__ : v;
+      const ids = snap.docs.map(d => norm(d.data().userId)).sort();
       info(`Native where('movieId','==', ${label}) finds userIds [${ids.join(',')}]`);
       return ids;
     };

@@ -4,6 +4,7 @@
 // cross-API. Task 5's home-page-to-demo-page story depends on the MongoDB write arriving.
 const { conn, ok, bad, info, done, projectId, databaseId, starterRequire } = require('./_common');
 const MARKER = 999998;   // movieId used only by this test
+const TAG = 'verify-realtime';   // string field: both APIs agree on strings, unlike int32 vs int64
 const WAIT_MS = 30000;
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -17,7 +18,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const writerApp   = initializeApp(cfg, 'writer');      // separate client: no shared local cache
     const ldb = fs.initializeFirestore(listenerApp, {}, databaseId());
     const wdb = fs.initializeFirestore(writerApp, {}, databaseId());
-    const q = fs.query(fs.collection(ldb, 'ratings'), fs.where('movieId', '==', MARKER));
+    const q = fs.query(fs.collection(ldb, 'ratings'), fs.where('tag', '==', TAG));
 
     // Track what the listener has seen from the server, keyed by userId of the marker docs.
     const seenFromServer = new Set();
@@ -28,7 +29,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       if (!initialDone) { initialDone = true; info(`initial snapshot: ${snap.size} marker docs (${Date.now() - t0} ms)`); return; }
       if (snap.metadata.hasPendingWrites) return;                 // local echo, ignore
       seenFromServer.clear();
-      snap.forEach(d => seenFromServer.add(d.data().userId));
+      snap.forEach(d => { const u = d.data().userId; seenFromServer.add((u && typeof u === 'object' && '__int32__' in u) ? u.__int32__ : u); });
       info(`server snapshot #${snaps}: userIds=[${[...seenFromServer].join(',')}] (${Date.now() - t0} ms)`);
     }, (err) => bad('listener error: ' + err.code + ' ' + err.message));
 
@@ -37,7 +38,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     const { db } = await conn.connect();
     const ratings = db.collection('ratings');
-    await ratings.deleteMany({ movieId: MARKER });
+    await ratings.deleteMany({ tag: TAG });
     await sleep(1500);
 
     const waitFor = async (pred, label) => {
@@ -49,17 +50,17 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     // 1. Native write from an independent client (userId 1)
     info('writing a marker rating through the Firestore Native API (second client)...');
     const nativeRef = await fs.addDoc(fs.collection(wdb, 'ratings'),
-      { userId: 1, movieId: MARKER, rating: 5, timestamp: Math.floor(Date.now() / 1000) });
+      { userId: 1, movieId: MARKER, rating: 5, tag: TAG, timestamp: Math.floor(Date.now() / 1000) });
     const nativeOk = await waitFor(() => seenFromServer.has(1), 'listener saw the Native-API write');
 
     // 2. MongoDB write (userId 2)
     info('writing a marker rating through the MongoDB driver...');
-    await ratings.insertOne({ userId: 2, movieId: MARKER, rating: 5, timestamp: Math.floor(Date.now() / 1000) });
+    await ratings.insertOne({ userId: 2, movieId: MARKER, rating: 5, tag: TAG, timestamp: Math.floor(Date.now() / 1000) });
     const mongoOk = await waitFor(() => seenFromServer.has(2), 'listener saw the MongoDB write');
 
     // Is the MongoDB write at least visible to a one-time Native read?
-    const once = await fs.getDocs(fs.query(fs.collection(wdb, 'ratings'), fs.where('movieId', '==', MARKER)));
-    const onceIds = once.docs.map(d => d.data().userId).sort();
+    const once = await fs.getDocs(fs.query(fs.collection(wdb, 'ratings'), fs.where('tag', '==', TAG)));
+    const onceIds = once.docs.map(d => { const u = d.data().userId; return (u && typeof u === 'object' && '__int32__' in u) ? u.__int32__ : u; }).sort();
     onceIds.includes(2) ? ok(`one-time Native getDocs sees the MongoDB write (userIds ${onceIds.join(',')})`)
                         : bad(`one-time Native getDocs does NOT see the MongoDB write (userIds ${onceIds.join(',')})`);
 
@@ -68,7 +69,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     if (nativeOk && mongoOk) info('VERDICT: cross-API real-time push works.');
 
     // cleanup
-    await ratings.deleteMany({ movieId: MARKER });
+    await ratings.deleteMany({ tag: TAG });
     try { await fs.deleteDoc(nativeRef); } catch (_) {}
   } catch (e) { bad('realtime check threw: ' + e.message); }
   unsubscribe();
