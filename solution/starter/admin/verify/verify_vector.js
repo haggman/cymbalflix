@@ -2,9 +2,10 @@
 const { conn, ok, bad, info, done, projectId, databaseId, starterRequire } = require('./_common');
 (async () => {
   try {
-    const admin = starterRequire('firebase-admin');
-    if (!admin.apps.length) admin.initializeApp({ projectId: projectId() });
-    const f = admin.firestore(); f.settings({ databaseId: databaseId() });
+    const { initializeApp, getApps, getApp } = starterRequire('firebase-admin/app');
+    const { getFirestore } = starterRequire('firebase-admin/firestore');
+    const app = getApps().length ? getApp() : initializeApp({ projectId: projectId() });
+    const f = getFirestore(app, databaseId());
     const movies = f.collection('movies');
     const unwrap = (v) => (v && typeof v === 'object' && Object.keys(v).length === 1 && '__int__' in v) ? v.__int__ : v;
     // movieId was written by the MongoDB driver as int32; query with the int32 wire shape.
