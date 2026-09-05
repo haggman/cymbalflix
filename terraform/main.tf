@@ -54,6 +54,12 @@ resource "google_firestore_database" "cymbalflix" {
   firestore_data_access_mode          = "DATA_ACCESS_MODE_ENABLED"
   mongodb_compatible_data_access_mode = "DATA_ACCESS_MODE_ENABLED"
 
+  # Real-time listeners (onSnapshot) on an Enterprise database are off unless
+  # this is enabled; without it the browser SDK in Task 5 only ever sees its own
+  # local writes. Create-only: it cannot be changed on an existing database
+  # (verified 2026-09-05). Billed as a separate line item.
+  realtime_updates_mode = "REALTIME_UPDATES_MODE_ENABLED"
+
   depends_on = [
     google_project_service.firestore
   ]
