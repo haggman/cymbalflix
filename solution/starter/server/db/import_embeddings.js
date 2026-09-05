@@ -20,7 +20,7 @@ const path = require('path');
 const { parse } = require('csv-parse');
 const cliProgress = require('cli-progress');
 const { FieldValue } = require('firebase-admin/firestore');
-const { initializeFirestore } = require('./firestore-native');
+const { initializeFirestore, fromNative } = require('./firestore-native');
 
 const EMBEDDINGS_FILE = path.resolve(process.argv[2] || 'embeddings.csv');
 const EXPECTED_DIMENSION = 1536;
@@ -58,8 +58,9 @@ async function loadMovieRefs(firestore) {
   const snapshot = await firestore.collection('movies').select('movieId').get();
   const refs = new Map();
   snapshot.forEach(doc => {
-    const movieId = doc.get('movieId');
-    if (movieId !== undefined && movieId !== null) {
+    // movieId was written by the MongoDB driver as int32; fromNative() unwraps it.
+    const movieId = fromNative(doc.get('movieId'));
+    if (movieId !== undefined && movieId !== null && !Number.isNaN(Number(movieId))) {
       refs.set(Number(movieId), doc.ref);
     }
   });
