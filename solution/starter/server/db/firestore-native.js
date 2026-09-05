@@ -7,9 +7,10 @@
 // database, the Firestore Native API, which is what vector search
 // (findNearest) needs. Both APIs read and write the same documents.
 //
-// Deps: npm install firebase-admin
+// Deps: npm install firebase-admin   (uses the modular API, firebase-admin 12+)
 
-const admin = require('firebase-admin');
+const { initializeApp, getApps, getApp } = require('firebase-admin/app');
+const { getFirestore: adminGetFirestore } = require('firebase-admin/firestore');
 
 let firestore = null;
 
@@ -39,15 +40,12 @@ function initializeFirestore() {
   const projectId = resolveProjectId();
   const databaseId = process.env.FIRESTORE_DATABASE || 'cymbalflix-db';
 
-  if (!admin.apps.length) {
-    // With no explicit projectId the SDK falls back to Application Default
-    // Credentials, which know the project on both Cloud Shell and Cloud Run.
-    admin.initializeApp(projectId ? { projectId: projectId } : {});
-  }
+  // With no explicit projectId the SDK falls back to Application Default
+  // Credentials, which know the project on both Cloud Shell and Cloud Run.
+  const app = getApps().length ? getApp() : initializeApp(projectId ? { projectId } : {});
 
-  firestore = admin.firestore();
-  // settings() must run before the first read or write on this instance.
-  firestore.settings({ databaseId: databaseId });
+  // Named database: pass the ID as the second argument.
+  firestore = adminGetFirestore(app, databaseId);
 
   console.log(`✓ Firestore Native API ready (database: ${databaseId})`);
   return firestore;
