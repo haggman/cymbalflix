@@ -6,6 +6,7 @@
 #   bash ~/cymbalflix/solution/starter/admin/verify/verify.sh data       # after Task 1.3 (npm run import), again after 3.5
 #   bash ~/cymbalflix/solution/starter/admin/verify/verify.sh rules      # after Task 5.6 (publish_rules.sh)
 #   bash ~/cymbalflix/solution/starter/admin/verify/verify.sh realtime   # after Task 5.6 (needs rules)
+#   bash ~/cymbalflix/solution/starter/admin/verify/verify.sh numbers    # after Task 5.6: int32 vs int64 across the two APIs
 #   bash ~/cymbalflix/solution/starter/admin/verify/verify.sh vector     # after Task 6.3 (embeddings + index)
 #   bash ~/cymbalflix/solution/starter/admin/verify/verify.sh text       # after Task 7.1 (text index)
 #   bash ~/cymbalflix/solution/starter/admin/verify/verify.sh all
@@ -88,6 +89,7 @@ stage_infra() {
 
 stage_data()     { hdr "Data via MongoDB API";   node_stage verify_data.js; }
 stage_realtime() { hdr "Real-time push (MongoDB write -> Native listener)"; node_stage verify_realtime.js; }
+stage_numbers()  { hdr "Cross-API number typing (int32 vs int64)"; node_stage verify_numbers.js; }
 stage_vector()   {
   hdr "Vector index"
   local idx; idx="$(gcloud firestore indexes composite list --database="$DB" --format=json 2>/dev/null | jq -r '.[] | select(.fields[]?.vectorConfig != null) | "\(.name | split("/") | last)  \(.state)"')"
@@ -111,7 +113,7 @@ stage_rules() {
 
 run() { case "$1" in
   infra) stage_infra;; data) stage_data;; rules) stage_rules;; realtime) stage_realtime;;
-  vector) stage_vector;; text) stage_text;;
+  vector) stage_vector;; text) stage_text;; numbers) stage_numbers;;
   all) stage_infra; stage_data; stage_rules; stage_realtime; stage_vector; stage_text;;
   *) echo "unknown stage: $1"; sed -n '2,13p' "$0"; exit 2;;
 esac; }
