@@ -10,7 +10,8 @@ import {
   onSnapshot,
   persistentLocalCache,
   disableNetwork,
-  enableNetwork, 
+  enableNetwork,
+  waitForPendingWrites,
   addDoc
 } from 'firebase/firestore';
 
@@ -123,6 +124,17 @@ export async function toggleOffline() {
         console.log('✈️ Offline mode');
     }
     return isOfflineMode;
+}
+
+/**
+ * Resolve once every write queued while offline has been acknowledged by the server.
+ * This is the receipt for "syncing...": the SDK reports the queue as empty only after
+ * Firestore has committed each write, not merely after it has been sent.
+ */
+export async function waitForSync() {
+    if (!db) throw new Error('Firebase not initialized');
+    await waitForPendingWrites(db);
+    console.log('✅ All pending writes acknowledged by the server');
 }
 
 export function isOffline() { return isOfflineMode; }

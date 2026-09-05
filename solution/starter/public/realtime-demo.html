@@ -384,8 +384,13 @@
         document.getElementById('offlineToggle').addEventListener('click', async () => {
           const isNowOffline = await CymbalFlixRealtime.toggleOffline();
           updateConnectionUI(!isNowOffline);
-          log(isNowOffline ? '✈️ Switched to offline mode' : '🌐 Back online - syncing...',
-            isNowOffline ? 'warning' : 'success');
+          if (isNowOffline) {
+            log('✈️ Switched to offline mode', 'warning');
+          } else {
+            log('🌐 Back online - syncing...', 'success');
+            await CymbalFlixRealtime.waitForSync();
+            log('✅ Synced: all queued writes accepted by the server', 'success');
+          }
         });
 
         log('🎬 Demo ready! Try rating a movie in another tab.', 'success');
