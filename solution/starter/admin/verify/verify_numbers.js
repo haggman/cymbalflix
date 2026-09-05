@@ -25,7 +25,7 @@ const MARKER = 999997;
     const nativeQuery = async (label, value) => {
       const snap = await fs.getDocs(fs.query(fs.collection(fdb, 'ratings'), fs.where('movieId', '==', value)));
       snap.docs.forEach(d => info(`   raw doc via Native: ${JSON.stringify(d.data())}`));
-      const norm = (v) => (v && typeof v === 'object' && '__int32__' in v) ? v.__int32__ : v;
+      const norm = (v) => (v && typeof v === 'object' && '__int__' in v) ? v.__int__ : v;
       const ids = snap.docs.map(d => norm(d.data().userId)).sort();
       info(`Native where('movieId','==', ${label}) finds userIds [${ids.join(',')}]`);
       return ids;
@@ -34,6 +34,16 @@ const MARKER = 999997;
     let i32 = null;
     if (typeof fs.int32 === 'function') i32 = await nativeQuery('int32(999997)', fs.int32(MARKER));
     else info('this firebase SDK has no int32() helper');
+    // Can we query an int32 field by passing the wire shape the SDK hands back on read?
+    let shape = null;
+    try { shape = await nativeQuery('{__int__: 999997} (wire shape)', { __int__: MARKER }); }
+    catch (e) { info(`querying with {__int__: n} was rejected by the SDK: ${e.message.split('\n')[0]}`); }
+
+    // Do MongoDB _id and Native doc.id agree? (fallback lookup path for Task 6)
+    const mongoDoc = await ratings.findOne({ userId: 11 });
+    const nativeDoc = await fs.getDoc(fs.doc(fdb, 'ratings', String(mongoDoc._id)));
+    nativeDoc.exists() ? ok(`Native doc('ratings', '${String(mongoDoc._id)}') resolves the MongoDB _id (doc.id == _id)`)
+                       : bad(`Native doc lookup by MongoDB _id ${String(mongoDoc._id)} found nothing`);
 
     // Read the raw values back through Native to see how each is typed
     const all = await fs.getDocs(fs.query(fs.collection(fdb, 'ratings'), fs.where('userId', 'in', [11, 12, 13])));
@@ -46,6 +56,7 @@ const MARKER = 999997;
     else bad('Native int64 query does NOT match a MongoDB Long (int64) write');
     if (plain.includes(13)) ok('Native int64 query matches a MongoDB Double write'); else info('Native int64 query does not match a MongoDB Double write');
     if (i32) { i32.includes(11) ? ok('Native int32() query matches the MongoDB int32 write') : bad('Native int32() query does not match the MongoDB int32 write'); }
+    if (shape) { shape.includes(11) ? ok('Native query with {__int__: n} matches the MongoDB int32 write') : info('Native query with {__int__: n} was accepted but matched nothing'); }
 
     await ratings.deleteMany({ userId: { $in: [11, 12, 13] } });
   } catch (e) { bad('numbers check threw: ' + e.message); }

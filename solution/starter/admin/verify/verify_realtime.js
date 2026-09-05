@@ -29,7 +29,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       if (!initialDone) { initialDone = true; info(`initial snapshot: ${snap.size} marker docs (${Date.now() - t0} ms)`); return; }
       if (snap.metadata.hasPendingWrites) return;                 // local echo, ignore
       seenFromServer.clear();
-      snap.forEach(d => { const u = d.data().userId; seenFromServer.add((u && typeof u === 'object' && '__int32__' in u) ? u.__int32__ : u); });
+      snap.forEach(d => { const u = d.data().userId; seenFromServer.add((u && typeof u === 'object' && '__int__' in u) ? u.__int__ : u); });
       info(`server snapshot #${snaps}: userIds=[${[...seenFromServer].join(',')}] (${Date.now() - t0} ms)`);
     }, (err) => bad('listener error: ' + err.code + ' ' + err.message));
 
@@ -60,7 +60,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     // Is the MongoDB write at least visible to a one-time Native read?
     const once = await fs.getDocs(fs.query(fs.collection(wdb, 'ratings'), fs.where('tag', '==', TAG)));
-    const onceIds = once.docs.map(d => { const u = d.data().userId; return (u && typeof u === 'object' && '__int32__' in u) ? u.__int32__ : u; }).sort();
+    const onceIds = once.docs.map(d => { const u = d.data().userId; return (u && typeof u === 'object' && '__int__' in u) ? u.__int__ : u; }).sort();
     onceIds.includes(2) ? ok(`one-time Native getDocs sees the MongoDB write (userIds ${onceIds.join(',')})`)
                         : bad(`one-time Native getDocs does NOT see the MongoDB write (userIds ${onceIds.join(',')})`);
 
