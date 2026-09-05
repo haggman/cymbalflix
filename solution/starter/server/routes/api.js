@@ -41,8 +41,21 @@ router.get('/movies', async (req, res, next) => {
     const filter = {};
     
     // Search by title (case-insensitive regex)
+    // if (search && search.trim()) {
+    //   filter.title = { $regex: search.trim(), $options: 'i' };
+    // }
+
+    // Search handling - supports both regex (title-only) and full-text (title + summary)
     if (search && search.trim()) {
-      filter.title = { $regex: search.trim(), $options: 'i' };
+      const searchType = req.query.searchType || 'regex';
+
+      if (searchType === 'fulltext') {
+        // Full-text search across title and summary fields
+        filter.$text = { $search: search.trim() };
+      } else {
+        // Default: regex search on title only (original behavior)
+        filter.title = { $regex: search.trim(), $options: 'i' };
+      }
     }
     
     if (genre) {
@@ -54,7 +67,22 @@ router.get('/movies', async (req, res, next) => {
     }
     
     // Build sort options
+    // const sortOptions = {};
+    // const validSortFields = ['averageRating', 'ratingCount', 'title', 'year'];
+    // const sortField = validSortFields.includes(sort) ? sort : 'averageRating';
+    // sortOptions[sortField] = order === 'asc' ? 1 : -1;
+
+    // Build sort options
     const sortOptions = {};
+    const searchType = req.query.searchType || 'regex';
+    const isFullTextSearch = search && search.trim() && searchType === 'fulltext';
+
+    if (isFullTextSearch) {
+      // For full-text search, sort by relevance score first
+      sortOptions.score = { $meta: 'textScore' };
+    }
+
+    // Add user-specified sort as secondary (or primary if not full-text)
     const validSortFields = ['averageRating', 'ratingCount', 'title', 'year'];
     const sortField = validSortFields.includes(sort) ? sort : 'averageRating';
     sortOptions[sortField] = order === 'asc' ? 1 : -1;

@@ -37,10 +37,8 @@ export async function initializeFirebase(projectId, databaseId) {
   return db;
 }
 
-
 /**
- * CymbalFlix Real-time Features
- * Uses Firestore Native API for real-time sync and offline support
+ * Subscribe to live counts for movies, ratings, and tags; returns an unsubscribe function
  */
 export function subscribeToStats(onStatsUpdate) {
   if (!db) throw new Error('Firebase not initialized');

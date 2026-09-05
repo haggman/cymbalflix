@@ -43,10 +43,18 @@
               <span class="input-group-text">
                 <i class="bi bi-search"></i>
               </span>
-              <input type="text" id="searchInput" class="form-control" placeholder="Search movie titles...">
+              <select id="searchType" class="form-select" style="max-width: 140px;">
+                <option value="regex">Title Only</option>
+                <option value="fulltext">Full-Text</option>
+              </select>
+              <input type="text" id="searchInput" class="form-control" placeholder="Search movies...">
               <button id="searchButton" class="btn btn-primary">Search</button>
               <button id="clearSearch" class="btn btn-outline-secondary">Clear</button>
             </div>
+            <small class="text-muted mt-2 d-block">
+              <strong>Title Only:</strong> Matches exact text in titles.
+              <strong>Full-Text:</strong> Searches titles and summaries with relevance ranking.
+            </small>
           </div>
         </div>
 

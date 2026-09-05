@@ -6,6 +6,7 @@ let currentPage = 0;
 const itemsPerPage = 20;
 let currentFilters = {
   search: '',
+  searchType: 'regex', // <--New line
   genre: '',
   minRating: '',
   sort: 'averageRating',
@@ -26,6 +27,7 @@ function setupEventListeners() {
   document.getElementById('searchButton').addEventListener('click', () => {
     currentPage = 0;
     currentFilters.search = document.getElementById('searchInput').value;
+    currentFilters.searchType = document.getElementById('searchType').value;  // <--New line
     loadMovies();
   });
   
@@ -41,6 +43,7 @@ function setupEventListeners() {
     if (e.key === 'Enter') {
       currentPage = 0;
       currentFilters.search = document.getElementById('searchInput').value;
+      currentFilters.searchType = document.getElementById('searchType').value;  // <--New line
       loadMovies();
     }
   });
@@ -77,6 +80,7 @@ function setupEventListeners() {
 // Update filters from UI
 function updateFiltersFromUI() {
   currentFilters.search = document.getElementById('searchInput').value;
+  currentFilters.searchType = document.getElementById('searchType').value; // <--New line
   currentFilters.genre = document.getElementById('genreFilter').value;
   currentFilters.minRating = document.getElementById('minRatingFilter').value;
   
@@ -88,12 +92,14 @@ function updateFiltersFromUI() {
 // Reset filters
 function resetFilters() {
   document.getElementById('searchInput').value = '';
+  document.getElementById('searchType').value = 'regex'; // <--New line
   document.getElementById('genreFilter').value = '';
   document.getElementById('minRatingFilter').value = '';
   document.getElementById('sortFilter').value = 'averageRating:desc';
   
   currentFilters = {
     search: '',
+    searchType: 'regex', // <--New line
     genre: '',
     minRating: '',
     sort: 'averageRating',
@@ -150,6 +156,7 @@ async function loadMovies() {
     
     if (currentFilters.search) {
       params.append('search', currentFilters.search);
+      params.append('searchType', currentFilters.searchType || 'regex'); // <--New line
     }
     
     if (currentFilters.genre) {
