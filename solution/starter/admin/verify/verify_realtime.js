@@ -1,12 +1,12 @@
 // After Task 5.6: proves a write through the MongoDB API reaches a Firestore Native onSnapshot listener.
 // This is the dual-API + realtime_updates_mode claim of Task 5, tested without a browser.
-const { conn, ok, bad, info, done, projectId, databaseId } = require('./_common');
+const { conn, ok, bad, info, done, projectId, databaseId, starterRequire } = require('./_common');
 const MARKER = 999998;   // movieId used only by this test
 (async () => {
   let unsubscribe = () => {};
   try {
-    const { initializeApp } = await import('firebase/app');
-    const fs = await import('firebase/firestore');
+    const { initializeApp } = starterRequire('firebase/app');
+    const fs = starterRequire('firebase/firestore');
     const app = initializeApp({ projectId: projectId() });
     const fdb = fs.initializeFirestore(app, {}, databaseId());
     const q = fs.query(fs.collection(fdb, 'ratings'), fs.where('movieId', '==', MARKER));

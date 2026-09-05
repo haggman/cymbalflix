@@ -1,8 +1,8 @@
 // After Task 6.3: embeddings present, and findNearest() returns sensible neighbours through the Native API.
-const { conn, ok, bad, info, done, projectId, databaseId } = require('./_common');
+const { conn, ok, bad, info, done, projectId, databaseId, starterRequire } = require('./_common');
 (async () => {
   try {
-    const admin = require('firebase-admin');
+    const admin = starterRequire('firebase-admin');
     if (!admin.apps.length) admin.initializeApp({ projectId: projectId() });
     const f = admin.firestore(); f.settings({ databaseId: databaseId() });
     const movies = f.collection('movies');
