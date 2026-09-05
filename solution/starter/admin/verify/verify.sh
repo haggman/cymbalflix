@@ -23,9 +23,16 @@ bad()  { echo "  FAIL  $*"; FAIL=$((FAIL+1)); }
 info() { echo "  ....  $*"; }
 hdr()  { echo; echo "== $* =="; }
 
-node_stage() {  # node_stage script.js
-  ( cd "$STARTER" && NODE_PATH="$STARTER/node_modules" STARTER_DIR="$STARTER" node "$HERE/$1" )
-  if [ $? -eq 0 ]; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); fi
+node_stage() {  # node_stage script.js  (counts the PASS/FAIL lines the script prints)
+  local out
+  out="$( cd "$STARTER" && NODE_PATH="$STARTER/node_modules" STARTER_DIR="$STARTER" node "$HERE/$1" 2>&1 )"
+  local rc=$?
+  echo "$out"
+  local p f
+  p="$(echo "$out" | grep -c '^  PASS')"; f="$(echo "$out" | grep -c '^  FAIL')"
+  PASS=$((PASS+p)); FAIL=$((FAIL+f))
+  # a crash with no FAIL line printed still counts as a failure
+  if [ $rc -ne 0 ] && [ "$f" -eq 0 ]; then bad "$1 exited with status $rc"; fi
 }
 
 stage_infra() {
