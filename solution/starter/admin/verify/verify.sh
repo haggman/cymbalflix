@@ -59,10 +59,18 @@ stage_infra() {
   fi
 
   hdr "Audit logging (Data Access) for Firestore"
-  if gcloud projects get-iam-policy "$PROJECT" --format=json 2>/dev/null | jq -e '.auditConfigs[]? | select(.service=="firestore.googleapis.com")' >/dev/null; then
-    ok "firestore.googleapis.com data-access audit config present"
+  # Firestore data-access logs are configured on datastore.googleapis.com (which covers
+  # firestore.googleapis.com too); the log entries themselves report firestore.googleapis.com.
+  local cfg; cfg="$(gcloud projects get-iam-policy "$PROJECT" --format=json 2>/dev/null | jq -c '.auditConfigs[]? | select(.service=="datastore.googleapis.com" or .service=="allServices")')"
+  if [ -n "$cfg" ]; then
+    local types; types="$(echo "$cfg" | jq -r '[.auditLogConfigs[].logType] | join(" ")')"
+    if echo "$types" | grep -q DATA_READ && echo "$types" | grep -q DATA_WRITE; then
+      ok "datastore.googleapis.com audit config: $types"
+    else
+      bad "datastore.googleapis.com audit config present but missing DATA_READ/DATA_WRITE ($types)"
+    fi
   else
-    bad "no audit config for firestore.googleapis.com (Task 4.14 will show no data-access logs)"
+    bad "no data-access audit config for datastore.googleapis.com (Task 4.14 will show no data-access logs)"
   fi
 
   hdr "Tools on the Cloud Shell image"
