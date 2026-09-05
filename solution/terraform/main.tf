@@ -29,6 +29,16 @@ resource "google_project_service" "aiplatform" {
   disable_on_destroy = false
 }
 
+# Firebase Rules API: Task 5 publishes Firestore security rules for the browser
+# SDK from the Cloud console, which stores them through this API. (The Firebase
+# CLI isn't used; a lab project can't be registered as a Firebase project.)
+resource "google_project_service" "firebaserules" {
+  project = var.project_id
+  service = "firebaserules.googleapis.com"
+
+  disable_on_destroy = false
+}
+
 # Create Firestore database (Enterprise, dual API access)
 resource "google_firestore_database" "cymbalflix" {
   project          = var.project_id
